@@ -1,7 +1,7 @@
-import userRoutes from "../endpoints/userEndpoints";
+import userRoutes from "../endpoints/adminEndPoints";
 import Api from "./axiosConfig";
 
-export const adminLogin = async (data) => {
+export const agentLogin = async (data) => {
   try {
     console.log("data", data);
     const response = await Api.post(userRoutes.login, data);

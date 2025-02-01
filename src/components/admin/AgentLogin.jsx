@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { adminLogin } from "../api/user";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { setUserInfo } from "../redux/slices/userSlice";
+import { setUserInfo } from "../../redux/slices/userSlice";
 import toast from "react-hot-toast";
 
-const AdminLogin = () => {
+const AgentLogin = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -65,15 +64,16 @@ const AdminLogin = () => {
 
     setLoading(true);
     try {
-      const response = await adminLogin(formData);
+      const response = await agentLogin(formData);
       if (response.status === 200) {
         dispatch(
           setUserInfo({
             user: response.data.name,
             userId: response.data.userId,
+            role: "agent", // Assuming you want to store the role in the state
           })
         );
-        navigate("/dashboard");
+        navigate("/agent-dashboard"); // Redirect to agent dashboard
         toast.success("Login successful!");
       } else {
         toast.error(response.data.message || "Login failed");
@@ -96,25 +96,21 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen flex bg-[#E3E2DF]">
-      <div className="hidden lg:flex w-1/2 items-center justify-center p-12 bg-[#EE4C7C]">
+      <div className="hidden lg:flex w-1/2 items-center justify-center p-12 bg-[#4CAF50]">
         <div className="max-w-md">
           <h1 className="text-5xl font-bold text-white mb-6">
-            Agent Management Portal
+            Agent Task Portal
           </h1>
           <p className="text-xl text-white/90">
-            Streamline your agent operations with our powerful management
-            system. Upload CSV lists, distribute tasks efficiently, and manage
-            your team all in one place.
+            Manage your tasks efficiently with our agent portal. View assigned
+            tasks, update status.
           </p>
           <div className="mt-8 space-y-4 text-white/80">
             <p className="flex items-center">
-              ✓ Easy agent onboarding and management
+              ✓ View and manage assigned tasks
             </p>
             <p className="flex items-center">
-              ✓ Automated task distribution system
-            </p>
-            <p className="flex items-center">
-              ✓ CSV upload and validation features
+              ✓ Update task status in real-time
             </p>
           </div>
         </div>
@@ -122,8 +118,8 @@ const AdminLogin = () => {
 
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md bg-white rounded-xl p-8 shadow-lg">
-          <h2 className="text-3xl font-bold text-[#EE4C7C] mb-8 text-center">
-            Welcome Back Admin
+          <h2 className="text-3xl font-bold text-[#4CAF50] mb-8 text-center">
+            Welcome Back Agent
           </h2>
 
           {submitError && (
@@ -145,8 +141,8 @@ const AdminLogin = () => {
                 className={`w-full px-4 py-3 rounded-lg bg-gray-50 border ${
                   errors.email
                     ? "border-red-500"
-                    : "border-gray-200 focus:border-[#EE4C7C]"
-                } text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#EE4C7C]/30`}
+                    : "border-gray-200 focus:border-[#4CAF50]"
+                } text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4CAF50]/30`}
                 placeholder="Enter your email"
                 required
               />
@@ -167,8 +163,8 @@ const AdminLogin = () => {
                 className={`w-full px-4 py-3 rounded-lg bg-gray-50 border ${
                   errors.password
                     ? "border-red-500"
-                    : "border-gray-200 focus:border-[#EE4C7C]"
-                } text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#EE4C7C]/30`}
+                    : "border-gray-200 focus:border-[#4CAF50]"
+                } text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4CAF50]/30`}
                 placeholder="Enter your password"
                 required
               />
@@ -180,7 +176,7 @@ const AdminLogin = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#EE4C7C] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#EE4C7C]/90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#EE4C7C] focus:ring-offset-2 disabled:opacity-50"
+              className="w-full bg-[#4CAF50] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#4CAF50]/90 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:ring-offset-2 disabled:opacity-50"
             >
               {loading ? "Signing In..." : "Sign In"}
             </button>
@@ -191,4 +187,4 @@ const AdminLogin = () => {
   );
 };
 
-export default AdminLogin;
+export default AgentLogin;

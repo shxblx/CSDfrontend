@@ -1,22 +1,40 @@
 import React from "react";
-import Login from "../components/AdminLogin";
-import { Route, Routes } from "react-router-dom";
-import PrivateRoute from "../components/PrivateRoute";
-import PublicRoute from "../components/PublicRoute";
+import AdminLogin from "../components/admin/AdminLogin";
+import { Navigate, Route, Routes } from "react-router-dom";
+import AgentLogin from "../components/admin/AgentLogin";
+import AdminDashboard from "../components/admin/AdminDashboard";
+import AdminPublicRoute from "../components/admin/adminPublicRoute";
+import AdminPrivateRoute from "../components/admin/adminPrivateRoute";
 
 const UserRouter = () => {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route
         path="/adminlogin"
         element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
+          <AdminPublicRoute>
+            <AdminLogin />
+          </AdminPublicRoute>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <AdminPublicRoute>
+            <AgentLogin />
+          </AdminPublicRoute>
         }
       />
 
-      <Route path="/home" element={<PrivateRoute></PrivateRoute>} />
+      <Route
+        path="/adminhome"
+        element={
+          <AdminPrivateRoute>
+            <AdminDashboard />
+          </AdminPrivateRoute>
+        }
+      />
     </Routes>
   );
 };
