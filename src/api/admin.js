@@ -15,6 +15,20 @@ export const adminLogin = async (data) => {
     throw error;
   }
 };
+export const adminLogout = async () => {
+  try {
+    const response = await Api.post(adminRoutes.adminLogout);
+    return response;
+  } catch (error) {
+    if (error.response) {
+      console.log(error.response);
+      return error.response;
+    } else {
+      console.error("Error", error.message);
+    }
+    throw error;
+  }
+};
 
 export const addAgent = async (data) => {
   try {

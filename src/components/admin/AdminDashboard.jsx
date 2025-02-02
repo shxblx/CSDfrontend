@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   Eye,
   EyeOff,
@@ -14,7 +16,13 @@ import {
 import swal from "sweetalert";
 import toast from "react-hot-toast";
 import AddAgentModal from "./AddAgentModal";
-import { fetchAgents, uploadCsv, deleteAgent } from "../../api/admin";
+import {
+  fetchAgents,
+  uploadCsv,
+  deleteAgent,
+  adminLogout,
+} from "../../api/admin";
+import { removeAdminInfo } from "../../redux/slices/adminSlice";
 
 const AdminDashboard = () => {
   const [agents, setAgents] = useState([]);
@@ -23,6 +31,8 @@ const AdminDashboard = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef(null);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadAgents();
@@ -40,6 +50,31 @@ const AdminDashboard = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      const willLogout = await swal({
+        title: "Are you sure you want to log out??",
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+      });
+
+      if (willLogout) {
+        const response = await adminLogout();
+        if (response.status === 200) {
+          dispatch(removeAdminInfo());
+          navigate("/adminlogin");
+          toast.success("Logged out successfully");
+        } else {
+          throw new Error(response.data?.message || "Logout failed");
+        }
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error(error.message || "Error during logout");
+    }
+  };
 
   const loadAgents = async () => {
     try {
@@ -145,7 +180,10 @@ const AdminDashboard = () => {
   const MobileMenu = () => (
     <div className="md:hidden bg-white border-t">
       <div className="px-2 pt-2 pb-3 space-y-1">
-        <button className="flex w-full items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
         </button>
@@ -194,7 +232,10 @@ const AdminDashboard = () => {
               </span>
             </div>
             <div className="hidden md:flex items-center gap-6">
-              <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
                 <LogOut className="w-5 h-5" />
                 <span>Logout</span>
               </button>
@@ -225,8 +266,9 @@ const AdminDashboard = () => {
               </h1>
               <div className="flex gap-4 w-full md:w-auto">
                 <button
+                  disabled={agents.length === 0}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                  className="flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-2 hover:bg-[#EE4C7C] hover:text-white transition-colors"
                 >
                   <Upload className="w-4 h-4" />
                   Upload CSV

@@ -3,7 +3,8 @@ const adminRoutes = {
   addAgent: "/admin/addagent",
   fetchAgents: "/admin/fetchagents",
   uploadCsv: "/admin/uploadcsv",
-  deleteAgent:"/admin/deleteagent"
+  deleteAgent: "/admin/deleteagent",
+  adminLogout: "/admin/adminlogout",
 };
 
 export default adminRoutes;
