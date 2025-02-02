@@ -12,6 +12,9 @@ import {
   X,
   LogOut,
   Loader2,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import swal from "sweetalert";
 import toast from "react-hot-toast";
@@ -26,10 +29,13 @@ import { removeAdminInfo } from "../../redux/slices/adminSlice";
 
 const AdminDashboard = () => {
   const [agents, setAgents] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [visiblePasswords, setVisiblePasswords] = useState(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [agentsPerPage] = useState(10);
   const fileInputRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -51,6 +57,26 @@ const AdminDashboard = () => {
     };
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const loadAgents = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetchAgents();
+      if (response.status === 200) {
+        setAgents(response.data.agents);
+      } else {
+        toast.error(response.data.message || "Failed to load agents");
+      }
+    } catch (err) {
+      toast.error("Error loading agents");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       const willLogout = await swal({
@@ -66,29 +92,10 @@ const AdminDashboard = () => {
           dispatch(removeAdminInfo());
           navigate("/admin/login");
           toast.success("Logged out successfully");
-        } else {
-          throw new Error(response.data?.message || "Logout failed");
         }
       }
     } catch (error) {
-      console.error("Logout error:", error);
       toast.error(error.message || "Error during logout");
-    }
-  };
-
-  const loadAgents = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetchAgents();
-      if (response.status === 200) {
-        setAgents(response.data.agents);
-      } else {
-        toast.error(response.data.message || "Failed to load agents");
-      }
-    } catch (err) {
-      toast.error("Error loading agents");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -109,18 +116,12 @@ const AdminDashboard = () => {
 
       if (willDelete) {
         const response = await deleteAgent(agentId);
-
         if (response.status === 200) {
           setAgents((prev) => prev.filter((agent) => agent._id !== agentId));
-          swal("Deleted!", "Agent has been deleted successfully.", "success");
           toast.success("Agent deleted successfully");
-        } else {
-          throw new Error(response.data?.message || "Failed to delete agent");
         }
       }
     } catch (error) {
-      console.error("Delete agent error:", error);
-      swal("Error!", "Failed to delete agent.", "error");
       toast.error(error.message || "Error deleting agent");
     }
   };
@@ -129,11 +130,7 @@ const AdminDashboard = () => {
     e.stopPropagation();
     setVisiblePasswords((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(agentId)) {
-        newSet.delete(agentId);
-      } else {
-        newSet.add(agentId);
-      }
+      newSet.has(agentId) ? newSet.delete(agentId) : newSet.add(agentId);
       return newSet;
     });
   };
@@ -148,8 +145,8 @@ const AdminDashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const fileExt = file.name.split(".").pop().toLowerCase();
     const validExtensions = ["csv", "xlsx", "xls"];
+    const fileExt = file.name.split(".").pop().toLowerCase();
 
     if (!validExtensions.includes(fileExt)) {
       toast.error("Please upload a valid CSV, XLSX, or XLS file");
@@ -161,15 +158,109 @@ const AdminDashboard = () => {
       if (response.status === 200) {
         toast.success("File uploaded successfully");
         await loadAgents();
-      } else {
-        toast.error(response.data?.message || "File upload failed");
       }
     } catch (error) {
       toast.error("Error uploading file");
     }
   };
 
+  const filteredAgents = agents.filter((agent) => {
+    const searchTerm = searchQuery.toLowerCase();
+    return (
+      agent.name.toLowerCase().includes(searchTerm) ||
+      agent.email.toLowerCase().includes(searchTerm) ||
+      agent.mobile.toLowerCase().includes(searchTerm)
+    );
+  });
+
+  const indexOfLastAgent = currentPage * agentsPerPage;
+  const indexOfFirstAgent = indexOfLastAgent - agentsPerPage;
+  const currentAgents = filteredAgents.slice(
+    indexOfFirstAgent,
+    indexOfLastAgent
+  );
+  const totalPages = Math.ceil(filteredAgents.length / agentsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo(0, 0);
+  };
+
+  const PaginationControls = () => {
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    const pageNumbers = [];
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="flex justify-center items-center space-x-2 mt-6">
+        <button
+          onClick={() => paginate(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        {startPage > 1 && (
+          <>
+            <button
+              onClick={() => paginate(1)}
+              className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
+            >
+              1
+            </button>
+            {startPage > 2 && <span className="px-2">...</span>}
+          </>
+        )}
+
+        {pageNumbers.map((number) => (
+          <button
+            key={number}
+            onClick={() => paginate(number)}
+            className={`px-4 py-2 rounded-lg border ${
+              currentPage === number
+                ? "bg-[#EE4C7C] text-white border-[#EE4C7C]"
+                : "border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {number}
+          </button>
+        ))}
+
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="px-2">...</span>}
+            <button
+              onClick={() => paginate(totalPages)}
+              className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
+            >
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        <button
+          onClick={() => paginate(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+    );
+  };
+
   const tableHeaders = [
+    { id: "number", label: "#" },
     { id: "name", label: "Name" },
     { id: "email", label: "Email" },
     { id: "mobile", label: "Mobile", className: "hidden md:table-cell" },
@@ -182,7 +273,7 @@ const AdminDashboard = () => {
       <div className="px-2 pt-2 pb-3 space-y-1">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          className="flex w-full items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
         >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
@@ -234,7 +325,7 @@ const AdminDashboard = () => {
             <div className="hidden md:flex items-center gap-6">
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Logout</span>
@@ -266,9 +357,8 @@ const AdminDashboard = () => {
               </h1>
               <div className="flex gap-4 w-full md:w-auto">
                 <button
-                  disabled={agents.length === 0}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-2 hover:bg-[#EE4C7C] hover:text-white transition-colors"
+                  className="flex-1 md:flex-none px-4 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-2 hover:bg-[#EE4C7C] hover:text-white"
                 >
                   <Upload className="w-4 h-4" />
                   Upload CSV
@@ -282,12 +372,25 @@ const AdminDashboard = () => {
                 />
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="flex-1 md:flex-none px-4 py-2 bg-[#EE4C7C] text-white rounded-lg flex items-center justify-center gap-2 hover:bg-[#EE4C7C]/90 transition-colors"
+                  className="flex-1 md:flex-none px-4 py-2 bg-[#EE4C7C] text-white rounded-lg flex items-center justify-center gap-2 hover:bg-[#EE4C7C]/90"
                 >
                   <UserPlus className="w-4 h-4" />
                   Add Agent
                 </button>
               </div>
+            </div>
+
+            <div className="relative w-full md:w-96 mb-6">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search agents by name, email, or mobile..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-[#EE4C7C] focus:border-[#EE4C7C] text-sm"
+              />
             </div>
 
             {isLoading ? (
@@ -304,55 +407,63 @@ const AdminDashboard = () => {
                   Start Adding Agents
                 </button>
               </div>
-            ) : (
-              <div className="overflow-x-auto mt-10">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      {tableHeaders.map((header) => (
-                        <th
-                          key={header.id}
-                          className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                            header.className || ""
-                          }`}
-                        >
-                          {header.label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {agents.map((agent) => (
-                      <tr
-                        key={`agent-${agent._id}`}
-                        className="hover:bg-gray-50"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {agent.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {agent.email}
-                        </td>
-                        <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
-                          {agent.mobile}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <PasswordCell agent={agent} />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleDeleteAgent(agent._id)}
-                            className="p-1 hover:bg-red-100 rounded text-red-600"
-                            title="Delete Agent"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            ) : filteredAgents.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">
+                  No agents found matching your search.
+                </p>
               </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto mt-10">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {tableHeaders.map((header) => (
+                          <th
+                            key={header.id}
+                            className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                              header.className || ""
+                            }`}
+                          >
+                            {header.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {currentAgents.map((agent, index) => (
+                        <tr key={agent._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                            {(currentPage - 1) * agentsPerPage + index + 1}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {agent.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {agent.email}
+                          </td>
+                          <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
+                            {agent.mobile}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <PasswordCell agent={agent} />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={() => handleDeleteAgent(agent._id)}
+                              className="p-1 hover:bg-red-100 rounded text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <PaginationControls />
+              </>
             )}
           </div>
         </div>
