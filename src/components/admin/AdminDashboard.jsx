@@ -18,7 +18,7 @@ import { fetchAgents, uploadCsv } from "../../api/admin";
 
 const AdminDashboard = () => {
   const [agents, setAgents] = useState([]);
-  const [showPassword, setShowPassword] = useState({});
+  const [visiblePasswords, setVisiblePasswords] = useState(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +28,19 @@ const AdminDashboard = () => {
     loadAgents();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".password-controls")) {
+        setVisiblePasswords(new Set());
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const loadAgents = async () => {
     try {
       setIsLoading(true);
@@ -35,7 +48,7 @@ const AdminDashboard = () => {
       if (response.status === 200) {
         setAgents(response.data.agents);
       } else {
-        toast.error(response.data.message);
+        toast.error(response.data.message || "Failed to load agents");
       }
     } catch (err) {
       toast.error("Error loading agents");
@@ -46,6 +59,7 @@ const AdminDashboard = () => {
 
   const handleAgentAdded = (newAgent) => {
     setAgents((prev) => [...prev, newAgent]);
+    setShowAddModal(false);
   };
 
   const handleDeleteAgent = (agentId) => {
@@ -57,20 +71,27 @@ const AdminDashboard = () => {
       dangerMode: true,
     }).then((willDelete) => {
       if (willDelete) {
-        setAgents((prev) => prev.filter((agent) => agent.id !== agentId));
+        setAgents((prev) => prev.filter((agent) => agent._id !== agentId));
         swal("Deleted!", "Agent has been deleted.", "success");
       }
     });
   };
 
-  const togglePasswordVisibility = (agentId) => {
-    setShowPassword((prev) => ({
-      ...prev,
-      [agentId]: !prev[agentId],
-    }));
+  const togglePasswordVisibility = (e, agentId) => {
+    e.stopPropagation();
+    setVisiblePasswords((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(agentId)) {
+        newSet.delete(agentId);
+      } else {
+        newSet.add(agentId);
+      }
+      return newSet;
+    });
   };
 
-  const copyPassword = (password) => {
+  const copyPassword = (e, password) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(password);
     toast.success("Password copied to clipboard");
   };
@@ -78,18 +99,25 @@ const AdminDashboard = () => {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const fileExt = file.name.split(".").pop().toLowerCase();
     const validExtensions = ["csv", "xlsx", "xls"];
+
     if (!validExtensions.includes(fileExt)) {
       toast.error("Please upload a valid CSV, XLSX, or XLS file");
       return;
     }
-    const response = await uploadCsv(file);
-    if (response.status === 200) {
-      toast.success("File uploaded successfully");
-      loadAgents();
-    } else {
-      toast.error("File upload failed");
+
+    try {
+      const response = await uploadCsv(file);
+      if (response.status === 200) {
+        toast.success("File uploaded successfully");
+        await loadAgents();
+      } else {
+        toast.error(response.data?.message || "File upload failed");
+      }
+    } catch (error) {
+      toast.error("Error uploading file");
     }
   };
 
@@ -100,6 +128,47 @@ const AdminDashboard = () => {
     { id: "password", label: "Password" },
     { id: "actions", label: "Actions" },
   ];
+
+  const MobileMenu = () => (
+    <div className="md:hidden bg-white border-t">
+      <div className="px-2 pt-2 pb-3 space-y-1">
+        <button className="flex w-full items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <LogOut className="w-5 h-5" />
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  const PasswordCell = ({ agent }) => {
+    const isVisible = visiblePasswords.has(agent._id);
+
+    return (
+      <div className="flex items-center gap-2 password-controls">
+        <span className="font-mono">
+          {isVisible ? agent.password : "••••••••"}
+        </span>
+        <button
+          onClick={(e) => togglePasswordVisibility(e, agent._id)}
+          className="p-1 hover:bg-gray-100 rounded"
+          title={isVisible ? "Hide Password" : "Show Password"}
+        >
+          {isVisible ? (
+            <EyeOff className="w-4 h-4" />
+          ) : (
+            <Eye className="w-4 h-4" />
+          )}
+        </button>
+        <button
+          onClick={(e) => copyPassword(e, agent.password)}
+          className="p-1 hover:bg-gray-100 rounded"
+          title="Copy Password"
+        >
+          <Copy className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -131,17 +200,9 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
-        {showMobileMenu && (
-          <div className="md:hidden bg-white border-t">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <button className="flex w-full items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                <LogOut className="w-5 h-5" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        )}
+        {showMobileMenu && <MobileMenu />}
       </nav>
+
       <div className="pt-20 p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-xl shadow-lg p-4 md:p-6 mt-20">
@@ -192,7 +253,7 @@ const AdminDashboard = () => {
               <div className="overflow-x-auto mt-10">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
-                    <tr key="header-row">
+                    <tr>
                       {tableHeaders.map((header) => (
                         <th
                           key={header.id}
@@ -208,7 +269,7 @@ const AdminDashboard = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {agents.map((agent) => (
                       <tr
-                        key={`agent-${agent.id}`}
+                        key={`agent-${agent._id}`}
                         className="hover:bg-gray-50"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -221,39 +282,11 @@ const AdminDashboard = () => {
                           {agent.mobile}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono">
-                              {showPassword[agent.id]
-                                ? agent.password
-                                : "••••••••"}
-                            </span>
-                            <button
-                              onClick={() => togglePasswordVisibility(agent.id)}
-                              className="p-1 hover:bg-gray-100 rounded"
-                              title={
-                                showPassword[agent.id]
-                                  ? "Hide Password"
-                                  : "Show Password"
-                              }
-                            >
-                              {showPassword[agent.id] ? (
-                                <EyeOff className="w-4 h-4" />
-                              ) : (
-                                <Eye className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => copyPassword(agent.password)}
-                              className="p-1 hover:bg-gray-100 rounded"
-                              title="Copy Password"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </button>
-                          </div>
+                          <PasswordCell agent={agent} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button
-                            onClick={() => handleDeleteAgent(agent.id)}
+                            onClick={() => handleDeleteAgent(agent._id)}
                             className="p-1 hover:bg-red-100 rounded text-red-600"
                             title="Delete Agent"
                           >
@@ -270,12 +303,11 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {showAddModal && (
-        <AddAgentModal
-          onClose={() => setShowAddModal(false)}
-          onAgentAdded={handleAgentAdded}
-        />
-      )}
+      <AddAgentModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAgentAdded={handleAgentAdded}
+      />
     </div>
   );
 };
