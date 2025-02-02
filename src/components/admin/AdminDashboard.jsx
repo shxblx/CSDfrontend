@@ -14,7 +14,7 @@ import {
 import swal from "sweetalert";
 import toast from "react-hot-toast";
 import AddAgentModal from "./AddAgentModal";
-import { fetchAgents, uploadCsv } from "../../api/admin";
+import { fetchAgents, uploadCsv, deleteAgent } from "../../api/admin";
 
 const AdminDashboard = () => {
   const [agents, setAgents] = useState([]);
@@ -62,19 +62,32 @@ const AdminDashboard = () => {
     setShowAddModal(false);
   };
 
-  const handleDeleteAgent = (agentId) => {
-    swal({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      buttons: true,
-      dangerMode: true,
-    }).then((willDelete) => {
+  const handleDeleteAgent = async (agentId) => {
+    try {
+      const willDelete = await swal({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+      });
+
       if (willDelete) {
-        setAgents((prev) => prev.filter((agent) => agent._id !== agentId));
-        swal("Deleted!", "Agent has been deleted.", "success");
+        const response = await deleteAgent(agentId);
+
+        if (response.status === 200) {
+          setAgents((prev) => prev.filter((agent) => agent._id !== agentId));
+          swal("Deleted!", "Agent has been deleted successfully.", "success");
+          toast.success("Agent deleted successfully");
+        } else {
+          throw new Error(response.data?.message || "Failed to delete agent");
+        }
       }
-    });
+    } catch (error) {
+      console.error("Delete agent error:", error);
+      swal("Error!", "Failed to delete agent.", "error");
+      toast.error(error.message || "Error deleting agent");
+    }
   };
 
   const togglePasswordVisibility = (e, agentId) => {

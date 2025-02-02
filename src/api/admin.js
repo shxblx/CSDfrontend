@@ -30,6 +30,25 @@ export const addAgent = async (data) => {
     throw error;
   }
 };
+
+export const deleteAgent = async (agentId) => {
+  try {
+    const response = await Api.delete(adminRoutes.deleteAgent, {
+      data: { agentId },
+    });
+    console.log(response);
+    return response;
+  } catch (error) {
+    if (error.response) {
+      console.error("Delete Agent Error:", error.response.data);
+      return error.response;
+    } else {
+      console.error("Error:", error.message);
+    }
+    throw error;
+  }
+};
+
 export const fetchAgents = async (data) => {
   try {
     const response = await Api.get(adminRoutes.fetchAgents);
