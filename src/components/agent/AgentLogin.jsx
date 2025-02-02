@@ -70,9 +70,8 @@ const AgentLogin = () => {
       if (response.status === 200) {
         dispatch(
           setAgentInfo({
-            user: response.data.name,
-            userId: response.data.userId,
-            role: "agent",
+            user: response.data.agent,
+            userId: response.data.agentId,
           })
         );
         navigate("/agent/dashboard");

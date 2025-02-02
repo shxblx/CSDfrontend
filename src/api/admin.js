@@ -50,7 +50,6 @@ export const deleteAgent = async (agentId) => {
     const response = await Api.delete(adminRoutes.deleteAgent, {
       data: { agentId },
     });
-    console.log(response);
     return response;
   } catch (error) {
     if (error.response) {
@@ -80,7 +79,6 @@ export const fetchAgents = async (data) => {
 
 export const uploadCsv = async (file) => {
   try {
-    console.log("here");
     const formData = new FormData();
     formData.append("file", file);
     console.log(formData);
