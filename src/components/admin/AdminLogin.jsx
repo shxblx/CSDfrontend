@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import { setAdminInfo } from "../../redux/slices/adminSlice";
+import { Link } from "react-router-dom";
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
@@ -73,7 +74,7 @@ const AdminLogin = () => {
             userId: response.data.userId,
           })
         );
-        navigate("/adminhome");
+        navigate("/admin/home");
         toast.success("Login successful!");
       } else {
         toast.error(response.data.message || "Login failed");
@@ -185,6 +186,15 @@ const AdminLogin = () => {
               {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
+
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-700">
+              Are you an{" "}
+              <Link to="/agent/login" className="text-[#EE4C7C] font-semibold">
+                agent?
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

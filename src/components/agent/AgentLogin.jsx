@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { agentLogin } from "../../api/agent";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { setUserInfo } from "../../redux/slices/userSlice";
 import toast from "react-hot-toast";
+import { setAgentInfo } from "../../redux/slices/agentSlice";
+import { Link } from "react-router-dom";
 
 const AgentLogin = () => {
   const [formData, setFormData] = useState({
@@ -67,13 +69,13 @@ const AgentLogin = () => {
       const response = await agentLogin(formData);
       if (response.status === 200) {
         dispatch(
-          setUserInfo({
+          setAgentInfo({
             user: response.data.name,
             userId: response.data.userId,
-            role: "agent", // Assuming you want to store the role in the state
+            role: "agent",
           })
         );
-        navigate("/agent-dashboard"); // Redirect to agent dashboard
+        navigate("/agent/dashboard");
         toast.success("Login successful!");
       } else {
         toast.error(response.data.message || "Login failed");
@@ -98,20 +100,17 @@ const AgentLogin = () => {
     <div className="min-h-screen flex bg-[#E3E2DF]">
       <div className="hidden lg:flex w-1/2 items-center justify-center p-12 bg-[#4CAF50]">
         <div className="max-w-md">
-          <h1 className="text-5xl font-bold text-white mb-6">
-            Agent Task Portal
-          </h1>
+          <h1 className="text-5xl font-bold text-white mb-6">Agent Portal</h1>
           <p className="text-xl text-white/90">
-            Manage your tasks efficiently with our agent portal. View assigned
-            tasks, update status.
+            Access your tasks and manage your assignments efficiently. Stay
+            updated with your latest tasks and track your progress.
           </p>
           <div className="mt-8 space-y-4 text-white/80">
             <p className="flex items-center">
-              ✓ View and manage assigned tasks
+              ✓ View assigned tasks and contacts
             </p>
-            <p className="flex items-center">
-              ✓ Update task status in real-time
-            </p>
+            <p className="flex items-center">✓ Track your progress</p>
+            <p className="flex items-center">✓ Manage contact information</p>
           </div>
         </div>
       </div>
@@ -181,6 +180,15 @@ const AgentLogin = () => {
               {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
+
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-700">
+              Are you an{" "}
+              <Link to="/admin/login" className="text-[#4CAF50] font-semibold">
+                admin?
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ const AdminPrivateRoute = ({ children }) => {
   const { adminInfo } = useSelector((state) => state.admin);
 
   if (!adminInfo) {
-    return <Navigate to="/adminlogin" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return children;

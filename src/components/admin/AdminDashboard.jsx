@@ -64,7 +64,7 @@ const AdminDashboard = () => {
         const response = await adminLogout();
         if (response.status === 200) {
           dispatch(removeAdminInfo());
-          navigate("/adminlogin");
+          navigate("/admin/login");
           toast.success("Logged out successfully");
         } else {
           throw new Error(response.data?.message || "Logout failed");
