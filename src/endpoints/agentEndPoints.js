@@ -1,6 +1,7 @@
 const agentRoutes = {
   agentLogin: "/agent/agentlogin",
-  getTasks:"/agent/gettasks"
+  getTasks: "/agent/gettasks",
+  agentLogout: "/agent/agentlogout",
 };
 
 export default agentRoutes;

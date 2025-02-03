@@ -15,9 +15,9 @@ export const agentLogin = async (data) => {
     throw error;
   }
 };
-export const agentLogout = async (data) => {
+export const agentLogout = async () => {
   try {
-    const response = await Api.post(agentRoutes.login, data);
+    const response = await Api.post(agentRoutes.agentLogout);
     return response;
   } catch (error) {
     if (error.response) {
