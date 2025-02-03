@@ -32,6 +32,7 @@ export const adminLogout = async () => {
 
 export const addAgent = async (data) => {
   try {
+    console.log(data);
     const response = await Api.post(adminRoutes.addAgent, data);
     return response;
   } catch (error) {

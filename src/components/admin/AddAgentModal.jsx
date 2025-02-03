@@ -3,6 +3,8 @@ import { X, Loader2 } from "lucide-react";
 import swal from "sweetalert";
 import toast from "react-hot-toast";
 import { addAgent } from "../../api/admin";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 const AddAgentModal = ({ isOpen, onClose, onAgentAdded }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,15 +26,36 @@ const AddAgentModal = ({ isOpen, onClose, onAgentAdded }) => {
     setNewAgent((prev) => ({ ...prev, password }));
   };
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleAddAgent = async (e) => {
     e.preventDefault();
+
+    if (!validateEmail(newAgent.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (!newAgent.mobile) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await addAgent(newAgent);
       if (response.status === 201) {
         onAgentAdded(response.data.agent);
         toast.success(response.data.message);
-        setNewAgent({ name: "", email: "", mobile: "", password: "" });
+        setNewAgent({
+          name: "",
+          email: "",
+          mobile: "",
+          password: "",
+        });
         onClose();
       } else {
         toast.error(response.data.message);
@@ -50,6 +73,13 @@ const AddAgentModal = ({ isOpen, onClose, onAgentAdded }) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
+  };
+
+  const handlePhoneChange = (value) => {
+    setNewAgent((prev) => ({
+      ...prev,
+      mobile: "+" + value,
+    }));
   };
 
   return (
@@ -97,13 +127,16 @@ const AddAgentModal = ({ isOpen, onClose, onAgentAdded }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Mobile Number
             </label>
-            <input
-              type="text"
-              value={newAgent.mobile}
-              onChange={(e) =>
-                setNewAgent((prev) => ({ ...prev, mobile: e.target.value }))
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4C7C]"
+            <PhoneInput
+              country={"in"}
+              value={newAgent.mobile.replace("+", "")} // Remove plus sign for the input
+              onChange={handlePhoneChange}
+              containerClass="w-full"
+              inputClass="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4C7C]"
+              buttonClass="border border-gray-300 rounded-lg"
+              enableSearch={true}
+              searchClass="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#EE4C7C]"
+              searchPlaceholder="Search country..."
               required
             />
           </div>
